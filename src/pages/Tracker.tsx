@@ -1,15 +1,19 @@
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import JobCard from "@/components/tracker/JobCard";
+import AddApplicationModal from "@/components/tracker/AddApplicationModal";
 import { Button } from "@/components/ui/button";
-import { mockJobs } from "@/data/mockData";
+import { mockJobs, type Job } from "@/data/mockData";
 import { Plus, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type FilterType = "all" | "applied" | "interviewing";
 
 const Tracker = () => {
+  const [jobs, setJobs] = useState<Job[]>(mockJobs);
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filters: { value: FilterType; label: string }[] = [
     { value: "all", label: "All" },
@@ -17,15 +21,29 @@ const Tracker = () => {
     { value: "interviewing", label: "Interviewing" },
   ];
 
-  const filteredJobs = mockJobs.filter((job) => {
+  const filteredJobs = jobs.filter((job) => {
     if (activeFilter === "all") return true;
     return job.status === activeFilter;
   });
 
   // Group jobs by status for Kanban-like visualization
-  const appliedJobs = mockJobs.filter((j) => j.status === "applied");
-  const interviewingJobs = mockJobs.filter((j) => j.status === "interviewing");
-  const closedJobs = mockJobs.filter((j) => j.status === "rejected" || j.status === "offered");
+  const appliedJobs = jobs.filter((j) => j.status === "applied");
+  const interviewingJobs = jobs.filter((j) => j.status === "interviewing");
+  const closedJobs = jobs.filter((j) => j.status === "rejected" || j.status === "offered");
+
+  const handleAddJob = (newJob: Omit<Job, "id">) => {
+    const job: Job = {
+      ...newJob,
+      id: Date.now().toString(),
+    };
+    setJobs((prev) => [job, ...prev]);
+    toast.success("Application added successfully!");
+  };
+
+  const handleDeleteJob = (id: string) => {
+    setJobs((prev) => prev.filter((job) => job.id !== id));
+    toast.success("Application deleted");
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,12 +58,12 @@ const Tracker = () => {
                 Application <span className="gradient-text">Tracker</span>
               </h1>
               <p className="text-muted-foreground">
-                {mockJobs.length} applications tracked
+                {jobs.length} applications tracked
               </p>
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="default">
+              <Button variant="default" onClick={() => setIsModalOpen(true)}>
                 <Plus className="w-4 h-4" />
                 Add Application
               </Button>
@@ -86,7 +104,7 @@ const Tracker = () => {
                 <div className="space-y-4">
                   {appliedJobs.map((job, index) => (
                     <div key={job.id} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                      <JobCard job={job} />
+                      <JobCard job={job} onDelete={handleDeleteJob} />
                     </div>
                   ))}
                 </div>
@@ -102,7 +120,7 @@ const Tracker = () => {
                 <div className="space-y-4">
                   {interviewingJobs.map((job, index) => (
                     <div key={job.id} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                      <JobCard job={job} />
+                      <JobCard job={job} onDelete={handleDeleteJob} />
                     </div>
                   ))}
                 </div>
@@ -118,7 +136,7 @@ const Tracker = () => {
                 <div className="space-y-4">
                   {closedJobs.map((job, index) => (
                     <div key={job.id} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                      <JobCard job={job} />
+                      <JobCard job={job} onDelete={handleDeleteJob} />
                     </div>
                   ))}
                 </div>
@@ -135,7 +153,7 @@ const Tracker = () => {
                   className="animate-fade-in"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <JobCard job={job} />
+                  <JobCard job={job} onDelete={handleDeleteJob} />
                 </div>
               ))}
               {filteredJobs.length === 0 && (
@@ -147,6 +165,13 @@ const Tracker = () => {
           )}
         </div>
       </main>
+
+      {/* Add Application Modal */}
+      <AddApplicationModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSave={handleAddJob}
+      />
     </div>
   );
 };

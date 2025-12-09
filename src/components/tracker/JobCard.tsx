@@ -1,11 +1,13 @@
 import { cn } from "@/lib/utils";
+import { Trash2 } from "lucide-react";
 import type { Job } from "@/data/mockData";
 
 interface JobCardProps {
   job: Job;
+  onDelete?: (id: string) => void;
 }
 
-const JobCard = ({ job }: JobCardProps) => {
+const JobCard = ({ job, onDelete }: JobCardProps) => {
   const statusConfig = {
     applied: {
       label: "Applied",
@@ -27,8 +29,26 @@ const JobCard = ({ job }: JobCardProps) => {
 
   const status = statusConfig[job.status];
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete the application for "${job.role}" at ${job.company}?`)) {
+      onDelete?.(job.id);
+    }
+  };
+
   return (
-    <div className={cn("job-card", job.status === "rejected" && "opacity-60")}>
+    <div className={cn("job-card group relative", job.status === "rejected" && "opacity-60")}>
+      {/* Delete Button */}
+      {onDelete && (
+        <button
+          onClick={handleDelete}
+          className="absolute top-3 right-3 p-1.5 rounded-md text-rose-500 opacity-0 group-hover:opacity-100 hover:bg-rose-500/10 transition-all duration-200 z-10"
+          aria-label="Delete application"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500/20 to-violet-500/20 border border-primary/30 flex items-center justify-center">

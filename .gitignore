@@ -12,6 +12,27 @@ dist
 dist-ssr
 *.local
 
+# Environment files (keep API keys secret!)
+.env
+.env.*
+.env.local
+.env.*.local
+.env.development
+.env.production
+*.env
+
+# Backend environment files
+backend/.env
+backend/src/.env
+backend/**/.env
+
+# API Keys and Secrets
+*.pem
+*.key
+*.cert
+secrets/
+config/secrets.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +43,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Build outputs
+build/
+.cache/
+.parcel-cache/
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+.tmp/

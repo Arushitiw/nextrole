@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sparkles, LayoutDashboard, Briefcase, FileText, Menu, X } from "lucide-react";
+import { Sparkles, Briefcase, FileText, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +13,6 @@ const Navbar = () => {
   const navLinks = [
     { path: "/analyze", label: "AI Matcher", icon: Sparkles },
     { path: "/tracker", label: "Tracker", icon: Briefcase },
-    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   ];
 
   return (

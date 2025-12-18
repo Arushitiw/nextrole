@@ -8,7 +8,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Analyze from "./pages/Analyze";
 import Tracker from "./pages/Tracker";
-import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,7 +24,6 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/analyze" element={<Analyze />} />
           <Route path="/tracker" element={<Tracker />} />
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

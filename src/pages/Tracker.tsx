@@ -1,44 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import JobCard from "@/components/tracker/JobCard";
 import AddApplicationModal from "@/components/tracker/AddApplicationModal";
 import { Button } from "@/components/ui/button";
-import { Plus, Filter, Loader2 } from "lucide-react";
+import { Plus, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import {
-  getJobApplications,
-  createJobApplication,
-  updateJobStatus,
-  deleteJobApplication,
-} from "@/services/jobApplications";
 import type { JobApplication, JobStatus, JobApplicationInsert } from "@/types/database";
 
 type FilterType = "all" | "applied" | "interviewing" | "offered" | "rejected";
 
 const Tracker = () => {
   const [jobs, setJobs] = useState<JobApplication[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Load jobs on mount
-  useEffect(() => {
-    loadJobs();
-  }, []);
-
-  const loadJobs = async () => {
-    try {
-      setLoading(true);
-      const applications = await getJobApplications();
-      setJobs(applications);
-    } catch (error) {
-      console.error("Failed to load applications:", error);
-      toast.error("Failed to load applications");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filters: { value: FilterType; label: string }[] = [
     { value: "all", label: "All" },
@@ -53,43 +28,37 @@ const Tracker = () => {
     return job.status === activeFilter;
   });
 
-  // Group jobs by status for Kanban-like visualization
   const appliedJobs = jobs.filter((j) => j.status === "applied");
   const interviewingJobs = jobs.filter((j) => j.status === "interviewing");
   const offeredJobs = jobs.filter((j) => j.status === "offered");
   const closedJobs = jobs.filter((j) => j.status === "rejected");
 
-  const handleAddJob = async (newJob: JobApplicationInsert) => {
-    try {
-      const created = await createJobApplication(newJob);
-      setJobs((prev) => [created, ...prev]);
-      toast.success("Application added successfully!");
-    } catch (error) {
-      console.error("Failed to add application:", error);
-      toast.error("Failed to add application");
-    }
+  const handleAddJob = (newJob: JobApplicationInsert) => {
+    const created: JobApplication = {
+      ...newJob,
+      id: crypto.randomUUID(),
+      logo: newJob.logo || newJob.company.charAt(0).toUpperCase(),
+      status: newJob.status || "applied",
+      date_applied: newJob.date_applied || new Date().toISOString().split("T")[0],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setJobs((prev) => [created, ...prev]);
+    toast.success("Application added successfully!");
   };
 
-  const handleUpdateStatus = async (id: string, status: JobStatus) => {
-    try {
-      const updated = await updateJobStatus(id, status);
-      setJobs((prev) => prev.map((job) => (job.id === id ? updated : job)));
-      toast.success("Status updated!");
-    } catch (error) {
-      console.error("Failed to update status:", error);
-      toast.error("Failed to update status");
-    }
+  const handleUpdateStatus = (id: string, status: JobStatus) => {
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === id ? { ...job, status, updated_at: new Date().toISOString() } : job
+      )
+    );
+    toast.success("Status updated!");
   };
 
-  const handleDeleteJob = async (id: string) => {
-    try {
-      await deleteJobApplication(id);
-      setJobs((prev) => prev.filter((job) => job.id !== id));
-      toast.success("Application deleted");
-    } catch (error) {
-      console.error("Failed to delete application:", error);
-      toast.error("Failed to delete application");
-    }
+  const handleDeleteJob = (id: string) => {
+    setJobs((prev) => prev.filter((job) => job.id !== id));
+    toast.success("Application deleted");
   };
 
   return (
@@ -108,7 +77,6 @@ const Tracker = () => {
                 {jobs.length} applications tracked
               </p>
             </div>
-
             <div className="flex items-center gap-3">
               <Button variant="default" onClick={() => setIsModalOpen(true)}>
                 <Plus className="w-4 h-4" />
@@ -117,115 +85,59 @@ const Tracker = () => {
             </div>
           </div>
 
-          {/* Loading State */}
-          {loading && (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <span className="ml-3 text-muted-foreground">Loading applications...</span>
-            </div>
-          )}
-
           {/* Filter Tabs */}
-          {!loading && (
-            <div className="flex items-center gap-2 mb-8 animate-fade-in" style={{ animationDelay: "100ms" }}>
-              <Filter className="w-4 h-4 text-muted-foreground" />
-              <div className="flex rounded-lg bg-secondary p-1 flex-wrap">
-                {filters.map((filter) => (
-                  <button
-                    key={filter.value}
-                    onClick={() => setActiveFilter(filter.value)}
-                    className={cn(
-                      "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                      activeFilter === filter.value
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
-              </div>
+          <div className="flex items-center gap-2 mb-8 animate-fade-in" style={{ animationDelay: "100ms" }}>
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <div className="flex rounded-lg bg-secondary p-1 flex-wrap">
+              {filters.map((filter) => (
+                <button
+                  key={filter.value}
+                  onClick={() => setActiveFilter(filter.value)}
+                  className={cn(
+                    "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                    activeFilter === filter.value
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {filter.label}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
 
           {/* Kanban Board View */}
-          {!loading && activeFilter === "all" && (
+          {activeFilter === "all" && jobs.length > 0 && (
             <div className="grid md:grid-cols-4 gap-6 animate-fade-in" style={{ animationDelay: "200ms" }}>
-              {/* Applied Column */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-3 h-3 rounded-full bg-primary" />
-                  <h2 className="font-semibold text-foreground">Applied</h2>
-                  <span className="text-sm text-muted-foreground">({appliedJobs.length})</span>
+              {[
+                { label: "Applied", color: "bg-primary", items: appliedJobs },
+                { label: "Interviewing", color: "bg-success", items: interviewingJobs },
+                { label: "Offered", color: "bg-violet-500", items: offeredJobs },
+                { label: "Closed", color: "bg-muted-foreground", items: closedJobs },
+              ].map((col) => (
+                <div key={col.label}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className={cn("w-3 h-3 rounded-full", col.color)} />
+                    <h2 className="font-semibold text-foreground">{col.label}</h2>
+                    <span className="text-sm text-muted-foreground">({col.items.length})</span>
+                  </div>
+                  <div className="space-y-4">
+                    {col.items.map((job, index) => (
+                      <div key={job.id} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
+                        <JobCard job={job} onDelete={handleDeleteJob} onStatusChange={handleUpdateStatus} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-4">
-                  {appliedJobs.map((job, index) => (
-                    <div key={job.id} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                      <JobCard job={job} onDelete={handleDeleteJob} onStatusChange={handleUpdateStatus} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Interviewing Column */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-3 h-3 rounded-full bg-success" />
-                  <h2 className="font-semibold text-foreground">Interviewing</h2>
-                  <span className="text-sm text-muted-foreground">({interviewingJobs.length})</span>
-                </div>
-                <div className="space-y-4">
-                  {interviewingJobs.map((job, index) => (
-                    <div key={job.id} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                      <JobCard job={job} onDelete={handleDeleteJob} onStatusChange={handleUpdateStatus} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Offered Column */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-3 h-3 rounded-full bg-violet-500" />
-                  <h2 className="font-semibold text-foreground">Offered</h2>
-                  <span className="text-sm text-muted-foreground">({offeredJobs.length})</span>
-                </div>
-                <div className="space-y-4">
-                  {offeredJobs.map((job, index) => (
-                    <div key={job.id} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                      <JobCard job={job} onDelete={handleDeleteJob} onStatusChange={handleUpdateStatus} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Closed Column */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-3 h-3 rounded-full bg-muted-foreground" />
-                  <h2 className="font-semibold text-foreground">Closed</h2>
-                  <span className="text-sm text-muted-foreground">({closedJobs.length})</span>
-                </div>
-                <div className="space-y-4">
-                  {closedJobs.map((job, index) => (
-                    <div key={job.id} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                      <JobCard job={job} onDelete={handleDeleteJob} onStatusChange={handleUpdateStatus} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
           )}
 
           {/* Grid View for Filtered Results */}
-          {!loading && activeFilter !== "all" && (
+          {activeFilter !== "all" && (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredJobs.map((job, index) => (
-                <div
-                  key={job.id}
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
+                <div key={job.id} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
                   <JobCard job={job} onDelete={handleDeleteJob} onStatusChange={handleUpdateStatus} />
                 </div>
               ))}
@@ -238,7 +150,7 @@ const Tracker = () => {
           )}
 
           {/* Empty State */}
-          {!loading && jobs.length === 0 && (
+          {jobs.length === 0 && (
             <div className="text-center py-20">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20 border border-primary/30 flex items-center justify-center">
                 <Plus className="w-8 h-8 text-primary" />
@@ -254,7 +166,6 @@ const Tracker = () => {
         </div>
       </main>
 
-      {/* Add Application Modal */}
       <AddApplicationModal
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
